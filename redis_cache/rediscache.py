@@ -16,10 +16,11 @@ class RedisConnect(object):
     where redis connection configuration needs customizing.
     '''
 
-    def __init__(self, host=None, port=None, db=None):
+    def __init__(self, host=None, port=None, db=None, url=None):
         self.host = host if host else 'localhost'
         self.port = port if port else 6379
         self.db = db if db else 0
+        self.url = url if url else None
 
     def connect(self):
         '''
@@ -28,13 +29,20 @@ class RedisConnect(object):
         RedisNoConnException is raised if we fail to ping.
         '''
         try:
-            redis.StrictRedis(host=self.host, port=self.port).ping()
+            if self.url is None:
+                redis.StrictRedis(host=self.host, port=self.port).ping()
+            else:
+                redis.StrictRedis.from_url(self.url).ping()
         except redis.ConnectionError as e:
             raise RedisNoConnException, ("Failed to create connection to redis",
                                          (self.host,
                                           self.port)
                 )
-        return redis.StrictRedis(host=self.host, port=self.port, db=self.db)
+
+        if self.url is None:
+            return redis.StrictRedis(host=self.host, port=self.port, db=self.db)
+        else:
+            return redis.StrictRedis.from_url(self.url)
 
 
 class CacheMissException(Exception):
@@ -52,7 +60,7 @@ class RedisNoConnException(Exception):
 class SimpleCache(object):
 
     def __init__(self, limit=1000, expire=60 * 60 * 24,
-                 hashkeys=False, host=None, port=None, db=None):
+                 hashkeys=False, host=None, port=None, db=None, url=None):
 
         self.limit = limit  # No of json encoded strings to cache
         self.expire = expire  # Time to keys to expire in seconds
@@ -66,11 +74,12 @@ class SimpleCache(object):
         self.host = host
         self.port = port
         self.db = db
+        self.url = url
 
         ## We cannot assume that connection will always succeed. A try/except
         ## clause will assure unexpected behavior and an unhandled exception do not result.
         try:
-            self.connection = RedisConnect(host=self.host, port=self.port, db=0).connect()
+            self.connection = RedisConnect(host=self.host, port=self.port, db=0, url=self.url).connect()
         except RedisNoConnException, e:
             self.connection = None
             pass
