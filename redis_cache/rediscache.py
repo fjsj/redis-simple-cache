@@ -32,7 +32,7 @@ class RedisConnect(object):
             if self.url is None:
                 redis.StrictRedis(host=self.host, port=self.port).ping()
             else:
-                redis.from_url(self.url).ping()
+                redis.StrictRedis.from_url(self.url).ping()
         except redis.ConnectionError as e:
             raise RedisNoConnException, ("Failed to create connection to redis",
                                          (self.host,
@@ -42,7 +42,7 @@ class RedisConnect(object):
         if self.url is None:
             return redis.StrictRedis(host=self.host, port=self.port, db=self.db)
         else:
-            return redis.from_url(self.url)
+            return redis.StrictRedis.from_url(self.url)
 
 
 class CacheMissException(Exception):
