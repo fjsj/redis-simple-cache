@@ -16,10 +16,11 @@ class RedisConnect(object):
     where redis connection configuration needs customizing.
     '''
 
-    def __init__(self, host=None, port=None, db=None):
+    def __init__(self, host=None, port=None, db=None, url=None):
         self.host = host if host else 'localhost'
         self.port = port if port else 6379
         self.db = db if db else 0
+        self.url = url if url else None
 
     def connect(self):
         '''
@@ -28,13 +29,20 @@ class RedisConnect(object):
         RedisNoConnException is raised if we fail to ping.
         '''
         try:
-            redis.StrictRedis(host=self.host, port=self.port).ping()
+            if self.url is None:
+                redis.StrictRedis(host=self.host, port=self.port).ping()
+            else:
+                redis.from_url(self.url).ping()
         except redis.ConnectionError as e:
             raise RedisNoConnException, ("Failed to create connection to redis",
                                          (self.host,
                                           self.port)
                 )
-        return redis.StrictRedis(host=self.host, port=self.port, db=self.db)
+
+        if self.url is None:
+            return redis.StrictRedis(host=self.host, port=self.port, db=self.db)
+        else:
+            return redis.from_url(self.url)
 
 
 class CacheMissException(Exception):
