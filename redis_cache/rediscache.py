@@ -60,7 +60,7 @@ class RedisNoConnException(Exception):
 class SimpleCache(object):
 
     def __init__(self, limit=1000, expire=60 * 60 * 24,
-                 hashkeys=False, host=None, port=None, db=None):
+                 hashkeys=False, host=None, port=None, db=None, url=None):
 
         self.limit = limit  # No of json encoded strings to cache
         self.expire = expire  # Time to keys to expire in seconds
@@ -74,11 +74,12 @@ class SimpleCache(object):
         self.host = host
         self.port = port
         self.db = db
+        self.url = url
 
         ## We cannot assume that connection will always succeed. A try/except
         ## clause will assure unexpected behavior and an unhandled exception do not result.
         try:
-            self.connection = RedisConnect(host=self.host, port=self.port, db=0).connect()
+            self.connection = RedisConnect(host=self.host, port=self.port, db=0, url=self.url).connect()
         except RedisNoConnException, e:
             self.connection = None
             pass
