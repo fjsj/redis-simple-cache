@@ -1,10 +1,10 @@
 # redis-simple-cache
-redis-simple-cache is a pythonic interface for creating a cache over redis.  
+redis-simple-cache is a pythonic interface for creating a cache over redis.
 It provides simple decorators that can be added to any function to cache its return values.
 
 Requirements:
 -------------
-redis 2.6.2  
+redis 2.6.2
 redis-py 2.7.1 (see requirements.txt file)
 
 Installation:
@@ -32,12 +32,12 @@ Usage:
         else:
             return fib(n-1) + fib(n-2)
 
-`limit` is the maximum number of keys, `expire` is the expire time in seconds.  
-It is always recommended to specify a expire time, since by default redis-server will only remove keys with an expire time set in a event of full memory. But if you wish your keys to never expire, set `expire` to `None`.  
+`limit` is the maximum number of keys, `expire` is the expire time in seconds.
+It is always recommended to specify a expire time, since by default redis-server will only remove keys with an expire time set in a event of full memory. But if you wish your keys to never expire, set `expire` to `None`.
 **Note that function arguments and result must be pickleable, since cache_it uses the pickle module.**
 
 It is also possible to use redis-simple-cache as a object-oriented cache:
-        
+
     >> from redis_cache import SimpleCache
     >> c = SimpleCache(10)  # cache that has a maximum limit of 10 keys
     >> c.store("foo", "bar")
@@ -60,15 +60,40 @@ Check out more examples in the test_rediscache.py file.
 Advanced:
 ---------
 Advanced users can customize the decorators even more by passing a SimpleCache object. For example:
-    
+
     my_cache = SimpleCache(limit=100, expire=60 * 60, hashkeys=True, host='localhost', port=6379, db=1)
     @cache_it(cache=my_cache)
     def fib(n):
         # ...
 
-`hashkeys` parameter makes the SimpleCache to store keys in md5 hash. It is `True` by default in decorators, but `False` by default in a new SimpleCache object.  
+`hashkeys` parameter makes the SimpleCache to store keys in md5 hash. It is `True` by default in decorators, but `False` by default in a new SimpleCache object.
 `host`, `port` and `db` are the same redis config params used in StrictRedis class of redis-py.
 
-AUTHOR: Vivek Narayanan  
-FORKED AND IMPROVED BY: Flávio Juvenal and Sam Zaydel   
+Multisession cache:
+-------------------
+
+In a case you need to keep values for many executions you only need to
+change how the SimpleCache gets the keys:
+
+    from redis_cache import cache_it, SimpleCache
+
+    class MultiSessionCache(SimpleCache):
+        key_str = "multisession-cache"
+
+        def make_key(self, key):
+            return MultiSessionCache.key_str + "-" + str(key)
+
+        def get_set_name(self):
+            return MultiSessionCache.key_str
+
+    my_cache = MultiSessionCache(hashkeys=True)
+    @cache_it(cache=my_cache)
+    def fib(g):
+        passs
+
+The code could be changed in other to have many instances but this is
+the most straight form.
+
+AUTHOR: Vivek Narayanan
+FORKED AND IMPROVED BY: Flávio Juvenal and Sam Zaydel
 LICENSE: BSD
